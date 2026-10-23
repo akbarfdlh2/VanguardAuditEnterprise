@@ -1,0 +1,68 @@
+Screen {
+    background: #0b1120;
+    color: #e2e8f0;
+}
+
+#control-bar {
+    height: 5;
+    margin: 1 2 0 2;
+    padding: 0 1;
+    background: #1e293b;
+    border: tall #334155;
+    align: left middle;
+}
+
+#url-input {
+    width: 52%;
+    margin-right: 1;
+}
+
+.action-btn {
+    width: 15%;
+    margin-left: 1;
+}
+
+#filter-bar {
+    height: 3;
+    margin: 1 2 0 2;
+    align: left middle;
+}
+
+.filter-btn {
+    margin-right: 1;
+    min-width: 16;
+}
+
+#metrics-row {
+    height: 5;
+    margin: 1 2;
+}
+
+.metric-card {
+    width: 1fr;
+    height: 100%;
+    margin-right: 1;
+    padding: 0 2;
+    background: #1e293b;
+    border: solid #334155;
+    content-align: left middle;
+}
+
+#score-card {
+    border: solid #38bdf8;
+}
+
+#results-table {
+    height: 1fr;
+    margin: 0 2;
+    background: #0f172a;
+    border: solid #334155;
+}
+
+#detail-panel {
+    height: 8;
+    margin: 1 2;
+    padding: 1 2;
+    background: #1e293b;
+    border: solid #475569;
+}
