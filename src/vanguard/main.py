@@ -14,6 +14,7 @@ from textual.widgets import Button, DataTable, Footer, Header, Input, Static
 
 from vanguard.auditors.base import BaseAuditor
 from vanguard.auditors.dns_auditor import DNSAuditor
+from vanguard.auditors.endpoint_auditor import EndpointAuditor
 from vanguard.auditors.governance_auditor import GovernanceAuditor
 from vanguard.auditors.headers_auditor import HeadersAuditor
 from vanguard.auditors.ssl_auditor import SSLAuditor
@@ -31,6 +32,7 @@ async def execute_all_auditors(target_url: str) -> AuditReport:
         HeadersAuditor(),
         DNSAuditor(),
         GovernanceAuditor(),
+        EndpointAuditor(),
     ]
 
     results = await asyncio.gather(*(auditor.run(target_url) for auditor in auditors))
@@ -80,6 +82,9 @@ class VanguardAuditApp(App[None]):
             yield Button("HTTP Headers", id="flt-headers", variant="default", classes="filter-btn")
             yield Button("SSL / TLS", id="flt-ssl", variant="default", classes="filter-btn")
             yield Button("Governance", id="flt-gov", variant="default", classes="filter-btn")
+            yield Button(
+                "Endpoints & API", id="flt-endpoints", variant="default", classes="filter-btn"
+            )
 
         with Horizontal(id="metrics-row"):
             yield Static(
@@ -123,6 +128,7 @@ class VanguardAuditApp(App[None]):
                 "flt-headers": "HTTP Headers",
                 "flt-ssl": "SSL/TLS",
                 "flt-gov": "Governance",
+                "flt-endpoints": "API & Endpoints",
             }
             self.active_filter = filter_map.get(btn_id, "ALL")
             self._refresh_table_view()
