@@ -122,3 +122,36 @@ def test_all_grades() -> None:
     )
     assert r_f.score == 20
     assert r_f.grade == "F"
+
+
+def test_securityscorecard_summary() -> None:
+    report = AuditReport(
+        target_url="https://example.com",
+        findings=[
+            AuditFinding(
+                category="HTTP Headers",
+                item="Content-Security-Policy",
+                severity=Severity.HIGH,
+                status="Tidak Ditemukan",
+                description="Missing CSP",
+                remediation="Add CSP",
+            ),
+            AuditFinding(
+                category="Network Security",
+                item="MySQL",
+                severity=Severity.HIGH,
+                status="Exposed",
+                description="Port 3306 open",
+                remediation="Firewall",
+            ),
+        ],
+    )
+    summary = report.securityscorecard_summary()
+    assert summary["overall_score"] == 68
+    assert "factors" in summary
+    assert "Application Security" in summary["factors"]
+    assert "Network Security" in summary["factors"]
+    assert summary["factors"]["Application Security"]["issues_count"] == 1
+    assert summary["factors"]["Network Security"]["issues_count"] == 1
+    assert summary["factors"]["DNS Health"]["issues_count"] == 0
+    assert summary["factors"]["DNS Health"]["score"] == 100

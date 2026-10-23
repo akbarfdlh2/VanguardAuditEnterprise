@@ -41,6 +41,34 @@ class HeadersAuditor(BaseAuditor):
                                     reference=ref,
                                 )
                             )
+                        elif h_name == "Strict-Transport-Security" and (
+                            "includesubdomains" not in val.lower() or "max-age" not in val.lower()
+                        ):
+                            findings.append(
+                                AuditFinding(
+                                    category="HTTP Headers",
+                                    item=h_name,
+                                    severity=Severity.LOW,
+                                    status="HSTS Belum Memenuhi Best Practice",
+                                    description=f"HSTS aktif ({short_val}), namun SecurityScorecard mewajibkan includeSubDomains dan max-age >= 31536000.",
+                                    remediation="Tambahkan header: 'Strict-Transport-Security: max-age=31536000; includeSubDomains; preload'",
+                                    reference="SecurityScorecard Application Security (HSTS Best Practices)",
+                                )
+                            )
+                        elif (
+                            h_name == "X-Content-Type-Options" and val.strip().lower() != "nosniff"
+                        ):
+                            findings.append(
+                                AuditFinding(
+                                    category="HTTP Headers",
+                                    item=h_name,
+                                    severity=Severity.MEDIUM,
+                                    status=f"Nilai Tidak Sesuai ({short_val})",
+                                    description="Header X-Content-Type-Options harus bernilai 'nosniff'.",
+                                    remediation="Tambahkan header: 'X-Content-Type-Options: nosniff'",
+                                    reference="SecurityScorecard Application Security (X-Content-Type-Options Best Practices)",
+                                )
+                            )
                         else:
                             findings.append(
                                 AuditFinding(

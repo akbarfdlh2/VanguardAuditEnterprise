@@ -17,6 +17,7 @@ from vanguard.auditors.dns_auditor import DNSAuditor
 from vanguard.auditors.endpoint_auditor import EndpointAuditor
 from vanguard.auditors.governance_auditor import GovernanceAuditor
 from vanguard.auditors.headers_auditor import HeadersAuditor
+from vanguard.auditors.network_auditor import NetworkAuditor
 from vanguard.auditors.ssl_auditor import SSLAuditor
 from vanguard.core.config import APP_NAME, APP_VERSION
 from vanguard.core.models import AuditFinding, AuditReport, Severity
@@ -33,6 +34,7 @@ async def execute_all_auditors(target_url: str) -> AuditReport:
         DNSAuditor(),
         GovernanceAuditor(),
         EndpointAuditor(),
+        NetworkAuditor(),
     ]
 
     results = await asyncio.gather(*(auditor.run(target_url) for auditor in auditors))
@@ -85,6 +87,12 @@ class VanguardAuditApp(App[None]):
             yield Button(
                 "Endpoints & API", id="flt-endpoints", variant="default", classes="filter-btn"
             )
+            yield Button(
+                "Network & Ports", id="flt-network", variant="default", classes="filter-btn"
+            )
+            yield Button(
+                "Patching Cadence", id="flt-patching", variant="default", classes="filter-btn"
+            )
 
         with Horizontal(id="metrics-row"):
             yield Static(
@@ -129,6 +137,8 @@ class VanguardAuditApp(App[None]):
                 "flt-ssl": "SSL/TLS",
                 "flt-gov": "Governance",
                 "flt-endpoints": "API & Endpoints",
+                "flt-network": "Network Security",
+                "flt-patching": "Patching Cadence",
             }
             self.active_filter = filter_map.get(btn_id, "ALL")
             self._refresh_table_view()
@@ -284,6 +294,17 @@ def run_headless_cli(url: str, fail_under: int, export_md: bool, export_json: bo
         rich_table.add_row(f.category, f.item, f.severity.value, f.status, f.remediation)
 
     console.print(rich_table)
+
+    ss_summary = report.securityscorecard_summary()
+    ss_table = Table(title="Penilaian Standar 10-Faktor Risiko SecurityScorecard")
+    ss_table.add_column("Faktor Risiko", style="cyan")
+    ss_table.add_column("Skor Faktor", justify="center")
+    ss_table.add_column("Status Temuan")
+    for factor, data in ss_summary["factors"].items():
+        score_val = data["score"]
+        score_style = "green" if score_val >= 90 else "yellow" if score_val >= 70 else "red"
+        ss_table.add_row(factor, f"[{score_style}]{score_val}/100[/]", data["status"])
+    console.print(ss_table)
 
     if export_md:
         md_file = ReportExporter.to_markdown(report)

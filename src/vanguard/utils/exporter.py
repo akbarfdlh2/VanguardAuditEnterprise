@@ -10,6 +10,7 @@ class ReportExporter:
     def to_markdown(report: AuditReport, output_path: str = "LAPORAN_AUDIT_VANGUARD.md") -> str:
         path = Path(output_path)
         counts = report.count_by_severity()
+        ss_summary = report.securityscorecard_summary()
 
         lines = [
             "# 🛡️ Laporan Audit Postur Keamanan (VanguardAudit Enterprise)",
@@ -29,11 +30,26 @@ class ReportExporter:
             "",
             "---",
             "",
-            "## 2. Tabel Detail Pemeriksaan & Panduan Mitigasi",
+            "## 2. Pemetaan Standar SecurityScorecard (10 Faktor Risiko)",
             "",
-            "| Kategori | Komponen | Severity | Status | Analisis Temuan | Rekomendasi Perbaikan (Remediation) | Standar / Referensi |",
-            "| :--- | :--- | :---: | :--- | :--- | :--- | :--- |",
+            "| Faktor Risiko SecurityScorecard | Skor Faktor | Status Temuan |",
+            "| :--- | :---: | :--- |",
         ]
+
+        for factor, data in ss_summary["factors"].items():
+            lines.append(f"| **{factor}** | `{data['score']}/100` | {data['status']} |")
+
+        lines.extend(
+            [
+                "",
+                "---",
+                "",
+                "## 3. Tabel Detail Pemeriksaan & Panduan Mitigasi",
+                "",
+                "| Kategori | Komponen | Severity | Status | Analisis Temuan | Rekomendasi Perbaikan (Remediation) | Standar / Referensi |",
+                "| :--- | :--- | :---: | :--- | :--- | :--- | :--- |",
+            ]
+        )
 
         for f in report.findings:
             lines.append(
@@ -44,7 +60,7 @@ class ReportExporter:
             [
                 "",
                 "---",
-                "*Laporan ini dihasilkan secara otomatis oleh **VanguardAudit Enterprise Defensive Inspector**.*",
+                "*Laporan ini dihasilkan secara otomatis oleh **VanguardAudit Enterprise Defensive Inspector** selaras dengan standar SecurityScorecard & OWASP.*",
             ]
         )
 
@@ -61,6 +77,7 @@ class ReportExporter:
             "score": report.score,
             "grade": report.grade,
             "summary_counts": {k.value: v for k, v in report.count_by_severity().items()},
+            "securityscorecard_summary": report.securityscorecard_summary(),
             "findings": [asdict(f) for f in report.findings],
         }
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 
 class Severity(str, Enum):
@@ -70,3 +71,48 @@ class AuditReport:
         if not category or category.upper() == "ALL":
             return self.findings
         return [f for f in self.findings if f.category.lower() == category.lower()]
+
+    def securityscorecard_summary(self) -> dict[str, Any]:
+        factors = [
+            "Application Security",
+            "Network Security",
+            "Patching Cadence",
+            "DNS Health",
+            "Endpoint Security",
+            "Information Leak",
+            "IP Reputation",
+            "Cubit Score",
+            "Hacker Chatter",
+            "Social Engineering",
+        ]
+        mapping: dict[str, list[str]] = {
+            "Application Security": ["HTTP Headers", "Application Security", "CORS Policy"],
+            "Network Security": ["Network Security", "SSL/TLS"],
+            "Patching Cadence": ["Patching Cadence", "Info Exposure"],
+            "DNS Health": ["DNS Security"],
+            "Endpoint Security": ["Cookie Security", "API & Endpoints"],
+            "Information Leak": ["Governance", "Info Exposure", "API & Endpoints"],
+            "IP Reputation": ["DNS Security"],
+            "Cubit Score": ["Network Security", "DNS Security"],
+            "Hacker Chatter": [],
+            "Social Engineering": ["DNS Security"],
+        }
+        res: dict[str, dict[str, Any]] = {}
+        for factor in factors:
+            cats = mapping.get(factor, [])
+            relevant = [f for f in self.findings if f.category in cats]
+            issues = [
+                f for f in relevant if f.severity in (Severity.HIGH, Severity.MEDIUM, Severity.LOW)
+            ]
+            deduction = sum(SEVERITY_PENALTIES[f.severity] for f in issues)
+            score = max(0, 100 - deduction) if relevant else 100
+            res[factor] = {
+                "score": score,
+                "issues_count": len(issues),
+                "status": "PASS" if not issues else f"{len(issues)} issues detected",
+            }
+        return {
+            "overall_score": self.score,
+            "overall_grade": self.grade,
+            "factors": res,
+        }

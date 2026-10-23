@@ -69,21 +69,36 @@ class SSLAuditor(BaseAuditor):
                     has_pfs = (
                         "ECDHE" in cipher_name or "DHE" in cipher_name or tls_version == "TLSv1.3"
                     )
+                    is_weak = (
+                        bits < 128
+                        or "CBC" in cipher_name
+                        or "3DES" in cipher_name
+                        or "RC4" in cipher_name
+                        or "NULL" in cipher_name
+                    )
                     findings.append(
                         AuditFinding(
                             category="SSL/TLS",
                             item="Cipher Suite & Forward Secrecy",
                             severity=Severity.PASS
-                            if (bits >= 128 and has_pfs)
+                            if (bits >= 128 and has_pfs and not is_weak)
                             else Severity.MEDIUM,
-                            status=f"{cipher_name} ({bits}-bit)",
-                            description=f"Algoritma sesi: {cipher_name} | Perfect Forward Secrecy (PFS): {'Ya' if has_pfs else 'Tidak'}",
+                            status=(
+                                f"{cipher_name} ({bits}-bit)"
+                                if not is_weak
+                                else f"Lemah: {cipher_name} ({bits}-bit)"
+                            ),
+                            description=(
+                                f"Algoritma sesi: {cipher_name} | Perfect Forward Secrecy (PFS): {'Ya' if has_pfs else 'Tidak'}"
+                                if not is_weak
+                                else f"Layanan TLS mendukung cipher suite lemah/rentan (CBC/legacy): {cipher_name}."
+                            ),
                             remediation=(
                                 "Cipher suite kuat dan mendukung Forward Secrecy."
-                                if (bits >= 128 and has_pfs)
-                                else "Utamakan cipher suite ECDHE dengan AES-GCM atau ChaCha20-Poly1305."
+                                if (bits >= 128 and has_pfs and not is_weak)
+                                else "Nonaktifkan cipher suite CBC, 3DES, dan RC4. Prioritaskan AEAD ciphers (GCM atau ChaCha20-Poly1305)."
                             ),
-                            reference="Mozilla Server Side TLS Guidelines",
+                            reference="SecurityScorecard Network Security / Mozilla Server Side TLS",
                         )
                     )
 
