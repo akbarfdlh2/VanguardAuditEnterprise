@@ -1,12 +1,11 @@
 from vanguard.core.models import Severity
 
 APP_NAME = "VanguardAudit Enterprise"
-APP_VERSION = "2.0.0"
+APP_VERSION = "0.0.1"
 DEFAULT_TIMEOUT = 8.0
 USER_AGENT = f"VanguardAudit-DefensiveInspector/{APP_VERSION} (+https://localhost/security-posture)"
 
-# Selector DKIM umum yang sering digunakan oleh layanan email korporat
-COMMON_DKIM_SELECTORS: list[str] = [
+COMMON_DKIM_SELECTORS: tuple[str, ...] = (
     "default",
     "google",
     "selector1",
@@ -18,9 +17,8 @@ COMMON_DKIM_SELECTORS: list[str] = [
     "mandrill",
     "sendgrid",
     "amazonses",
-]
+)
 
-# Standar HTTP Security Headers wajib beserta tingkat keparahan, penjelasan, dan panduan mitigasi
 REQUIRED_SECURITY_HEADERS: dict[str, tuple[Severity, str, str, str]] = {
     "Strict-Transport-Security": (
         Severity.HIGH,

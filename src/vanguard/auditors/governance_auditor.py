@@ -8,11 +8,6 @@ from vanguard.core.models import AuditFinding, Severity
 
 
 class GovernanceAuditor(BaseAuditor):
-    """
-    Memeriksa kepatuhan terhadap standar RFC 9116 (/.well-known/security.txt)
-    untuk memastikan organisasi memiliki jalur koordinasi pengungkapan kerentanan resmi.
-    """
-
     @property
     def name(self) -> str:
         return "RFC 9116 (security.txt) & Security Governance Auditor"

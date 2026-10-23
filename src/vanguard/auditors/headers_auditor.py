@@ -22,13 +22,11 @@ class HeadersAuditor(BaseAuditor):
                 response = await client.get(target_url)
                 headers = response.headers
 
-                # 1. Evaluasi Kelengkapan & Kualitas Security Headers
                 for h_name, (sev, desc, rem, ref) in REQUIRED_SECURITY_HEADERS.items():
                     if h_name in headers:
                         val = headers[h_name]
                         short_val = val if len(val) <= 55 else f"{val[:52]}..."
 
-                        # Evaluasi tambahan untuk CSP yang menggunakan unsafe-inline / unsafe-eval
                         if h_name == "Content-Security-Policy" and (
                             "'unsafe-inline'" in val.lower() or "'unsafe-eval'" in val.lower()
                         ):
@@ -68,7 +66,6 @@ class HeadersAuditor(BaseAuditor):
                             )
                         )
 
-                # 2. Evaluasi Kebijakan CORS (Cross-Origin Resource Sharing)
                 acao = headers.get("Access-Control-Allow-Origin")
                 acac = headers.get("Access-Control-Allow-Credentials", "").lower()
                 if acao == "*":
@@ -97,7 +94,6 @@ class HeadersAuditor(BaseAuditor):
                         )
                     )
 
-                # 3. Evaluasi Information Disclosure pada Banner Server
                 for leak_hdr in ["Server", "X-Powered-By", "X-AspNet-Version", "X-Generator"]:
                     if leak_hdr in headers:
                         val = headers[leak_hdr]
@@ -114,7 +110,6 @@ class HeadersAuditor(BaseAuditor):
                             )
                         )
 
-                # 4. Evaluasi Keamanan Cookie (Set-Cookie Flags)
                 raw_cookies = headers.get_list("set-cookie")
                 for idx, cookie_str in enumerate(raw_cookies, start=1):
                     c_lower = cookie_str.lower()

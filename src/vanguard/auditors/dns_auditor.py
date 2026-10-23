@@ -9,14 +9,22 @@ from vanguard.auditors.base import BaseAuditor
 from vanguard.core.config import COMMON_DKIM_SELECTORS, DEFAULT_TIMEOUT
 from vanguard.core.models import AuditFinding, Severity
 
+MULTI_PART_TLDS: frozenset[str] = frozenset(
+    {
+        "co.id",
+        "ac.id",
+        "go.id",
+        "or.id",
+        "sch.id",
+        "co.uk",
+        "org.uk",
+        "com.au",
+        "com.sg",
+    }
+)
+
 
 class DNSAuditor(BaseAuditor):
-    """
-    Enterprise DNS & Email Anti-Spoofing Posture Auditor.
-    Memeriksa SPF (beserta batas 10 DNS lookup), DMARC (beserta tag p, sp, pct, rua),
-    DKIM Selectors, MTA-STS, SMTP TLS-RPT, CAA, MX, dan DNSSEC.
-    """
-
     @property
     def name(self) -> str:
         return "Enterprise DNS & Email Security Auditor (SPF, DMARC, DKIM, MTA-STS, CAA, DNSSEC)"
@@ -26,31 +34,16 @@ class DNSAuditor(BaseAuditor):
 
     @staticmethod
     def _extract_base_domain(hostname: str) -> str:
-        """
-        Mengekstrak domain utama dari hostname (mendukung TLD umum maupun ccTLD seperti .co.id, .ac.id, .go.id).
-        """
         parts = hostname.lower().strip(".").split(".")
         if len(parts) <= 2:
             return hostname
-        multi_part_tlds = {
-            "co.id",
-            "ac.id",
-            "go.id",
-            "or.id",
-            "sch.id",
-            "co.uk",
-            "org.uk",
-            "com.au",
-            "com.sg",
-        }
         last_two = ".".join(parts[-2:])
-        if last_two in multi_part_tlds and len(parts) >= 3:
+        if last_two in MULTI_PART_TLDS and len(parts) >= 3:
             return ".".join(parts[-3:])
         return ".".join(parts[-2:])
 
     @staticmethod
     def _parse_dmarc_tags(dmarc_raw: str) -> dict[str, str]:
-        """Memecah string DMARC TXT menjadi kamus key-value."""
         tags: dict[str, str] = {}
         for part in dmarc_raw.split(";"):
             part = part.strip()
@@ -61,11 +54,6 @@ class DNSAuditor(BaseAuditor):
 
     @staticmethod
     def _count_spf_lookups(spf_raw: str) -> int:
-        """
-        Menghitung jumlah mekanisme SPF yang memicu kueri DNS sesuai RFC 7208 Section 4.6.4.
-        Mekanisme yang dihitung: include, a, mx, ptr, exists, redirect.
-        Batas maksimal standar RFC 7208 adalah 10 lookups.
-        """
         tokens = spf_raw.lower().split()
         lookup_count = 0
         for token in tokens[1:]:
@@ -100,25 +88,12 @@ class DNSAuditor(BaseAuditor):
         resolver.lifetime = DEFAULT_TIMEOUT
         resolver.timeout = 4.0
 
-        # 1. Audit MX (Mail Exchanger) Records
         findings.extend(self._check_mx_records(resolver, base_domain))
-
-        # 2. Audit SPF (Sender Policy Framework - RFC 7208)
         findings.extend(self._check_spf_record(resolver, base_domain))
-
-        # 3. Audit DMARC (RFC 7489)
         findings.extend(self._check_dmarc_record(resolver, base_domain))
-
-        # 4. Audit Common DKIM Selectors (RFC 6376)
         findings.extend(self._check_dkim_selectors(resolver, base_domain))
-
-        # 5. Audit MTA-STS & SMTP TLS Reporting (RFC 8461 & RFC 8460)
         findings.extend(self._check_mta_sts_and_tlsrpt(resolver, base_domain))
-
-        # 6. Audit CAA (Certification Authority Authorization - RFC 8659)
         findings.extend(self._check_caa_records(resolver, base_domain))
-
-        # 7. Audit DNSSEC (DNSKEY / DS Records - RFC 4035)
         findings.extend(self._check_dnssec(resolver, base_domain))
 
         return findings
@@ -127,7 +102,6 @@ class DNSAuditor(BaseAuditor):
         try:
             answers = resolver.resolve(domain, "MX")
             mx_servers = [str(r.exchange).rstrip(".") for r in answers]
-            # Cek Null MX (RFC 7505) jika domain memang tidak menerima email
             if len(mx_servers) == 1 and mx_servers[0] == "":
                 return [
                     AuditFinding(
@@ -207,7 +181,6 @@ class DNSAuditor(BaseAuditor):
         primary_spf = spf_records[0]
         lookup_count = self._count_spf_lookups(primary_spf)
 
-        # Evaluasi kebijakan akhir (-all, ~all, ?all, +all)
         if "+all" in primary_spf.lower():
             pol_sev = Severity.HIGH
             pol_status = "Berbahaya (+all)"
@@ -253,7 +226,6 @@ class DNSAuditor(BaseAuditor):
             )
         )
 
-        # Evaluasi batas 10 DNS Lookup & penggunaan mekanisme usang 'ptr'
         has_ptr = bool(re.search(r"\bptr\b", primary_spf.lower()))
         if lookup_count > 10:
             lookup_sev = Severity.MEDIUM
@@ -321,7 +293,6 @@ class DNSAuditor(BaseAuditor):
         pct = int(tags.get("pct", "100")) if tags.get("pct", "100").isdigit() else 100
         rua = tags.get("rua", "")
 
-        # 1. Evaluasi Kebijakan Utama (p=)
         if policy == "reject" and pct == 100:
             p_sev = Severity.PASS
             p_status = "Maksimal (p=reject, 100%)"
@@ -353,7 +324,6 @@ class DNSAuditor(BaseAuditor):
             )
         )
 
-        # 2. Evaluasi Pelaporan Agregat (rua=)
         if rua and "mailto:" in rua.lower():
             results.append(
                 AuditFinding(
@@ -425,8 +395,6 @@ class DNSAuditor(BaseAuditor):
         self, resolver: dns.resolver.Resolver, domain: str
     ) -> list[AuditFinding]:
         findings: list[AuditFinding] = []
-
-        # Cek _mta-sts.<domain>
         mta_sts_found = False
         try:
             answers = resolver.resolve(f"_mta-sts.{domain}", "TXT")

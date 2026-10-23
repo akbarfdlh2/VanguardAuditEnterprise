@@ -46,7 +46,6 @@ class SSLAuditor(BaseAuditor):
                 tls_version = ssock.version() or "Unknown"
                 cipher_info = ssock.cipher()
 
-                # 1. Validasi Versi Protokol TLS
                 modern_tls = tls_version in ("TLSv1.2", "TLSv1.3")
                 findings.append(
                     AuditFinding(
@@ -64,7 +63,6 @@ class SSLAuditor(BaseAuditor):
                     )
                 )
 
-                # 2. Validasi Kekuatan Cipher Suite
                 if cipher_info:
                     cipher_name, _, secret_bits = cipher_info
                     bits = secret_bits or 0
@@ -89,7 +87,6 @@ class SSLAuditor(BaseAuditor):
                         )
                     )
 
-                # 3. Validasi Masa Berlaku Sertifikat
                 if cert and "notAfter" in cert:
                     not_after_str = str(cert["notAfter"])
                     exp_date = datetime.strptime(not_after_str, "%b %d %H:%M:%S %Y %Z").replace(

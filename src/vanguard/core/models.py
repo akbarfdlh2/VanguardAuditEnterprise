@@ -11,6 +11,15 @@ class Severity(str, Enum):
     HIGH = "HIGH"
 
 
+SEVERITY_PENALTIES: dict[Severity, int] = {
+    Severity.HIGH: 16,
+    Severity.MEDIUM: 8,
+    Severity.LOW: 3,
+    Severity.INFO: 0,
+    Severity.PASS: 0,
+}
+
+
 @dataclass(frozen=True)
 class AuditFinding:
     category: str
@@ -31,24 +40,13 @@ class AuditReport:
 
     @property
     def score(self) -> int:
-        """
-        Menghitung skor postur keamanan (0-100) berdasarkan penalti berbobot.
-        """
         if not self.findings:
             return 0
-        penalties: dict[Severity, int] = {
-            Severity.HIGH: 16,
-            Severity.MEDIUM: 8,
-            Severity.LOW: 3,
-            Severity.INFO: 0,
-            Severity.PASS: 0,
-        }
-        total_penalty = sum(penalties[f.severity] for f in self.findings)
+        total_penalty = sum(SEVERITY_PENALTIES[f.severity] for f in self.findings)
         return max(0, 100 - total_penalty)
 
     @property
     def grade(self) -> str:
-        """Mengonversi skor numerik menjadi Grade huruf standar industri."""
         s = self.score
         if s >= 95:
             return "A+"

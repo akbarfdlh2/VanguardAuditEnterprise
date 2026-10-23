@@ -1,1 +1,0 @@
-"""VanguardAudit package module."""

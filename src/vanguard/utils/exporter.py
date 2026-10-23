@@ -6,8 +6,6 @@ from vanguard.core.models import AuditReport, Severity
 
 
 class ReportExporter:
-    """Utilitas ekspor laporan hasil audit ke format Markdown (.md) dan JSON (.json)."""
-
     @staticmethod
     def to_markdown(report: AuditReport, output_path: str = "LAPORAN_AUDIT_VANGUARD.md") -> str:
         path = Path(output_path)

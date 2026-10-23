@@ -23,7 +23,6 @@ from vanguard.utils.exporter import ReportExporter
 
 
 async def execute_all_auditors(target_url: str) -> AuditReport:
-    """Menjalankan seluruh modul auditor secara paralel (concurrent non-blocking I/O)."""
     start_time = time.perf_counter()
     report = AuditReport(target_url=target_url)
 
@@ -43,8 +42,6 @@ async def execute_all_auditors(target_url: str) -> AuditReport:
 
 
 class VanguardAuditApp(App[None]):
-    """Aplikasi Terminal UI (TUI) Interaktif untuk Audit Postur Keamanan Defensif."""
-
     CSS_PATH = Path(__file__).parent / "ui" / "styles.tcss"
 
     BINDINGS = [
@@ -259,7 +256,6 @@ class VanguardAuditApp(App[None]):
 
 
 def run_headless_cli(url: str, fail_under: int, export_md: bool, export_json: bool) -> int:
-    """Mode Headless CLI untuk otomatisasi di dalam pipeline CI/CD (GitHub Actions / GitLab CI)."""
     console = Console()
     if not url.startswith(("http://", "https://")):
         url = f"https://{url}"

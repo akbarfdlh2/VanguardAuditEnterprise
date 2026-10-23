@@ -18,7 +18,6 @@ def test_spf_lookup_counter_rfc7208() -> None:
         "v=spf1 ip4:192.0.2.0/24 include:_spf.google.com include:sendgrid.net "
         "a mx exists:%{i}._spf.mta.example.com -all"
     )
-    # include (2) + a (1) + mx (1) + exists (1) = 5 lookups (ip4 tidak dihitung sebagai DNS lookup)
     assert DNSAuditor._count_spf_lookups(sample_spf) == 5
 
 
@@ -68,7 +67,6 @@ async def test_dns_auditor_mocked_run() -> None:
                 m = MagicMock()
                 m.strings = [b"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQE..."]
                 return [m]
-            # Root TXT for SPF
             m = MagicMock()
             m.strings = [b"v=spf1 include:_spf.google.com -all"]
             return [m]

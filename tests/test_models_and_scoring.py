@@ -21,7 +21,6 @@ def test_security_score_and_grade_calculation() -> None:
             remediation="Aman",
         ),
     ]
-    # Skor 100 dikurangi penalti HIGH (16) = 84 (Grade B)
     assert report.score == 84
     assert report.grade == "B"
     assert len(report.filter_by_category("DNS Security")) == 1
@@ -41,7 +40,6 @@ def test_empty_findings_score_and_grade() -> None:
 
 
 def test_all_grades() -> None:
-    # A+ (>=95)
     r_a_plus = AuditReport(
         target_url="https://example.com",
         findings=[
@@ -58,7 +56,6 @@ def test_all_grades() -> None:
     assert r_a_plus.score == 97
     assert r_a_plus.grade == "A+"
 
-    # A (>=85)
     r_a = AuditReport(
         target_url="https://example.com",
         findings=[
@@ -75,7 +72,6 @@ def test_all_grades() -> None:
     assert r_a.score == 92
     assert r_a.grade == "A"
 
-    # C (>=60)
     r_c = AuditReport(
         target_url="https://example.com",
         findings=[
@@ -93,7 +89,6 @@ def test_all_grades() -> None:
     assert r_c.score == 68
     assert r_c.grade == "C"
 
-    # D (>=45)
     r_d = AuditReport(
         target_url="https://example.com",
         findings=[
@@ -111,7 +106,6 @@ def test_all_grades() -> None:
     assert r_d.score == 52
     assert r_d.grade == "D"
 
-    # F (<45)
     r_f = AuditReport(
         target_url="https://example.com",
         findings=[
